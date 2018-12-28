@@ -1,10 +1,12 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
-	InitFlags()
-	fmt.Println(userData)
+	userData, err := ParseCmd()
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	fmt.Println(userData.ToJSON())
 }
