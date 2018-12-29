@@ -9,7 +9,9 @@ import (
 	"github.com/jforcode/Go-DeepError"
 )
 
-const tagSeparator = ";"
+const (
+	tagSeparator = ";"
+)
 
 // TagFlags is the custom interface to get tags from command line
 type TagFlags []string
@@ -36,19 +38,54 @@ func (tagFlags *TagFlags) Set(value string) error {
 	return nil
 }
 
-// UserData is the model we use to represent the user commnad line input, instead of using separate variables
+// UserData represents the entire command line arguments
 type UserData struct {
-	Title string   `json:"title"`
-	Desc  string   `json:"desc"`
-	Tags  []string `json:"tags"`
+	command    string
+	listData   *ListData
+	createData *CreateData
 }
 
-// ToJSON returns a json string of user data
+// ToJSON prints the use data in JSON
 func (userData *UserData) ToJSON() string {
-	fn := "UserData.ToString"
+	fn := "ListData.ToString"
 
-	fmt.Println(userData)
 	jsonBytes, err := json.MarshalIndent(userData, "", "    ")
+	if err != nil {
+		return deepError.New(fn, "marshalling", err).Error()
+	}
+
+	return string(jsonBytes)
+}
+
+// ListData represents the data if command is list
+type ListData struct {
+	EventID string
+}
+
+// ToJSON prints the list data in JSON
+func (listData *ListData) ToJSON() string {
+	fn := "ListData.ToString"
+
+	jsonBytes, err := json.MarshalIndent(listData, "", "    ")
+	if err != nil {
+		return deepError.New(fn, "marshalling", err).Error()
+	}
+
+	return string(jsonBytes)
+}
+
+// CreateData represents the data if command is create
+type CreateData struct {
+	Title string
+	Desc  string
+	Tags  []string
+}
+
+// ToJSON prints the create data in JSON
+func (createData *CreateData) ToJSON() string {
+	fn := "CreateData.ToString"
+
+	jsonBytes, err := json.MarshalIndent(createData, "", "    ")
 	if err != nil {
 		return deepError.New(fn, "marshalling", err).Error()
 	}
@@ -60,6 +97,55 @@ func (userData *UserData) ToJSON() string {
 func ParseCmd() (*UserData, error) {
 	fn := "ParseCmd"
 
+	userData := &UserData{}
+
+	listFlag := flag.Bool("list", true, "Use this flag to list all events")
+	if *listFlag {
+		listData, err := ParseListData()
+		if err != nil {
+			return nil, deepError.New(fn, "parsing list data", err)
+		}
+
+		userData.listData = listData
+	}
+
+	createFlag := flag.Bool("create", true, "Use this flag to create an events")
+	if *createFlag {
+		createData, err := ParseCreateData()
+		if err != nil {
+			return nil, deepError.New(fn, "parsing create data", err)
+		}
+
+		userData.createData = createData
+	}
+
+	return userData, nil
+}
+
+// ParseListData parses the data if command is list
+func ParseListData() (*ListData, error) {
+	eventIDFlag := flag.String("eventID", "", "EventID to fetch the event for")
+
+	flag.Parse()
+	args := flag.Args()
+
+	listData := &ListData{}
+
+	listData.EventID = *eventIDFlag
+	if listData.EventID == "" {
+		if len(args) > 0 {
+			listData.EventID = args[0]
+			args = args[1:]
+		}
+	}
+
+	return listData, nil
+}
+
+// ParseCreateData parses the data if command is create.
+func ParseCreateData() (*CreateData, error) {
+	fn := "ParseCreateData"
+
 	var tagFlags *TagFlags
 	titleFlag := flag.String("title", "", "The title of the event")
 	descFlag := flag.String("desc", "", "The actual event description")
@@ -67,35 +153,34 @@ func ParseCmd() (*UserData, error) {
 
 	flag.Parse()
 	args := flag.Args()
-	lenArgs := len(args)
 
-	userData := &UserData{}
+	createData := &CreateData{}
 
-	userData.Title = *titleFlag
-	if userData.Title == "" {
-		if lenArgs > 0 {
-			userData.Title = args[0]
+	createData.Title = *titleFlag
+	if createData.Title == "" {
+		if len(args) > 0 {
+			createData.Title = args[0]
 			args = args[1:]
 		} else {
 			return nil, deepError.New(fn, "No title available either as a FLAG or as an ARG", nil)
 		}
 	}
 
-	userData.Desc = *descFlag
-	if userData.Desc == "" {
-		if lenArgs > 0 {
-			userData.Desc = args[0]
+	createData.Desc = *descFlag
+	if createData.Desc == "" {
+		if len(args) > 0 {
+			createData.Desc = args[0]
 			args = args[1:]
 		}
 	}
 
-	userData.Tags = make([]string, 0)
+	createData.Tags = make([]string, 0)
 	if tagFlags != nil {
-		userData.Tags = []string(*tagFlags)
+		createData.Tags = []string(*tagFlags)
 	}
 	for _, arg := range args {
-		userData.Tags = append(userData.Tags, strings.Split(arg, tagSeparator)...)
+		createData.Tags = append(createData.Tags, strings.Split(arg, tagSeparator)...)
 	}
 
-	return userData, nil
+	return createData, nil
 }
