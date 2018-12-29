@@ -98,12 +98,23 @@ func (createData *CreateData) ToJSON() string {
 // ParseCmd parses user entered command line data
 func ParseCmd() (*UserData, error) {
 	fn := "ParseCmd"
+	eventIDFlag := flag.String("eventID", "", "EventID to fetch the event for")
+
+	var tagFlags *TagFlags
+	titleFlag := flag.String("title", "", "The title of the event")
+	descFlag := flag.String("desc", "", "The actual event description")
+	flag.Var(tagFlags, "tags", "The tags for the event")
+
+	listFlag := flag.Bool("list", true, "Use this flag to list all events")
+	createFlag := flag.Bool("create", true, "Use this flag to create an event")
+
+	flag.Parse()
+	args := flag.Args()
 
 	userData := &UserData{}
 
-	listFlag := flag.Bool("list", true, "Use this flag to list all events")
 	if *listFlag {
-		listData, err := ParseListData()
+		listData, err := ParseListData(args, []interface{}{eventIDFlag})
 		if err != nil {
 			return nil, deepError.New(fn, "parsing list data", err)
 		}
@@ -114,9 +125,8 @@ func ParseCmd() (*UserData, error) {
 		return userData, nil
 	}
 
-	createFlag := flag.Bool("create", true, "Use this flag to create an events")
 	if *createFlag {
-		createData, err := ParseCreateData()
+		createData, err := ParseCreateData(args, []interface{}{titleFlag, descFlag, tagFlags})
 		if err != nil {
 			return nil, deepError.New(fn, "parsing create data", err)
 		}
@@ -131,12 +141,8 @@ func ParseCmd() (*UserData, error) {
 }
 
 // ParseListData parses the data if command is list
-func ParseListData() (*ListData, error) {
-	eventIDFlag := flag.String("eventID", "", "EventID to fetch the event for")
-
-	flag.Parse()
-	args := flag.Args()
-
+func ParseListData(args []string, flags []interface{}) (*ListData, error) {
+	eventIDFlag := flags[0].(*string)
 	listData := &ListData{}
 
 	listData.EventID = *eventIDFlag
@@ -151,16 +157,12 @@ func ParseListData() (*ListData, error) {
 }
 
 // ParseCreateData parses the data if command is create.
-func ParseCreateData() (*CreateData, error) {
+func ParseCreateData(args []string, flags []interface{}) (*CreateData, error) {
 	fn := "ParseCreateData"
 
-	var tagFlags *TagFlags
-	titleFlag := flag.String("title", "", "The title of the event")
-	descFlag := flag.String("desc", "", "The actual event description")
-	flag.Var(tagFlags, "tags", "The tags for the event")
-
-	flag.Parse()
-	args := flag.Args()
+	titleFlag := flags[0].(*string)
+	descFlag := flags[1].(*string)
+	tagFlags := flags[2].(*TagFlags)
 
 	createData := &CreateData{}
 

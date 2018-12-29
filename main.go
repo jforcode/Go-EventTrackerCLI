@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -48,5 +49,25 @@ func handleList(api *Api, listData *ListData) {
 }
 
 func handleCreate(api *Api, createData *CreateData) {
+	eventTags := make([]*EventTag, len(createData.Tags))
+	for _, cmdTag := range createData.Tags {
+		eventTags = append(eventTags, &EventTag{Value: cmdTag})
+	}
 
+	eventType := &EventType{Value: "single"}
+
+	event := &Event{
+		Title:         createData.Title,
+		Note:          createData.Desc,
+		Tags:          eventTags,
+		Type:          eventType,
+		UserCreatedAt: time.Now().UTC(),
+	}
+
+	eventID, err := api.CreateEvent(event)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Created event with ID: " + eventID)
 }
