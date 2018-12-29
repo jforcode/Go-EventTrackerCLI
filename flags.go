@@ -72,7 +72,7 @@ func ParseCmd() (*UserData, error) {
 	userData := &UserData{}
 
 	userData.Title = *titleFlag
-	if strings.Compare(userData.Title, "") == 0 {
+	if userData.Title == "" {
 		if lenArgs > 0 {
 			userData.Title = args[0]
 			args = args[1:]
@@ -82,7 +82,7 @@ func ParseCmd() (*UserData, error) {
 	}
 
 	userData.Desc = *descFlag
-	if strings.Compare(userData.Desc, "") == 0 {
+	if userData.Desc == "" {
 		if lenArgs > 0 {
 			userData.Desc = args[0]
 			args = args[1:]
