@@ -11,6 +11,8 @@ import (
 
 const (
 	tagSeparator = ";"
+	cmdList      = "list"
+	cmdCreate    = "create"
 )
 
 // TagFlags is the custom interface to get tags from command line
@@ -40,9 +42,9 @@ func (tagFlags *TagFlags) Set(value string) error {
 
 // UserData represents the entire command line arguments
 type UserData struct {
-	command    string
-	listData   *ListData
-	createData *CreateData
+	Command    string
+	ListData   *ListData
+	CreateData *CreateData
 }
 
 // ToJSON prints the use data in JSON
@@ -106,7 +108,10 @@ func ParseCmd() (*UserData, error) {
 			return nil, deepError.New(fn, "parsing list data", err)
 		}
 
-		userData.listData = listData
+		userData.Command = cmdList
+		userData.ListData = listData
+
+		return userData, nil
 	}
 
 	createFlag := flag.Bool("create", true, "Use this flag to create an events")
@@ -116,10 +121,13 @@ func ParseCmd() (*UserData, error) {
 			return nil, deepError.New(fn, "parsing create data", err)
 		}
 
-		userData.createData = createData
+		userData.Command = cmdCreate
+		userData.CreateData = createData
+
+		return userData, nil
 	}
 
-	return userData, nil
+	return nil, deepError.New(fn, "Invalid command", nil)
 }
 
 // ParseListData parses the data if command is list

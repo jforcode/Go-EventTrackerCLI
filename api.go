@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -63,6 +64,10 @@ func (api *Api) CreateEvent(event *Event) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return "", deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+	}
+
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", deepError.New(fn, "read all from response", err)
@@ -93,6 +98,10 @@ func (api *Api) GetAllEvents() ([]*Event, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+	}
+
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, deepError.New(fn, "read all from response", err)
@@ -109,9 +118,9 @@ func (api *Api) GetAllEvents() ([]*Event, error) {
 
 // GetEvent uses the API to get the event with the given event ID
 func (api *Api) GetEvent(eventID string) (*Event, error) {
-	fn := "GetAllEvents"
+	fn := "GetEvent"
 
-	url := strings.Replace(api.url+getAllEP, ":eventID", eventID, -1)
+	url := strings.Replace(api.url+getEP, ":eventID", eventID, -1)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, deepError.New(fn, "new request", err)
@@ -122,6 +131,10 @@ func (api *Api) GetEvent(eventID string) (*Event, error) {
 		return nil, deepError.New(fn, "making request", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -1,6 +1,11 @@
 package main
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/jforcode/Go-DeepError"
+)
 
 // Event model to represent an event
 type Event struct {
@@ -10,6 +15,18 @@ type Event struct {
 	UserCreatedAt time.Time   `json:"created_at"`
 	Type          *EventType  `json:"type"`
 	Tags          []*EventTag `json:"tags"`
+}
+
+// ToJSON returns a printable json representation
+func (event *Event) ToJSON() string {
+	fn := "ToJSON"
+
+	eventJSON, err := json.MarshalIndent(event, "", "    ")
+	if err != nil {
+		return deepError.New(fn, "marshal", err).Error()
+	}
+
+	return string(eventJSON)
 }
 
 // EventType model to represent a type
