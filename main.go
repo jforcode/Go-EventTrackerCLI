@@ -54,8 +54,8 @@ func handleList(api *Api, listData *ListData) {
 
 func handleCreate(api *Api, createData *CreateData) {
 	eventTags := make([]*EventTag, len(createData.Tags))
-	for _, cmdTag := range createData.Tags {
-		eventTags = append(eventTags, &EventTag{Value: cmdTag})
+	for index, cmdTag := range createData.Tags {
+		eventTags[index] = &EventTag{Value: cmdTag}
 	}
 
 	eventType := &EventType{Value: "single"}
