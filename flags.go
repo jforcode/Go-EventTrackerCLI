@@ -95,25 +95,36 @@ func (createData *CreateData) ToJSON() string {
 	return string(jsonBytes)
 }
 
+var eventIDFlag string
+var titleFlag string
+var descFlag string
+var tagFlags *TagFlags
+
+var listFlag bool
+var createFlag bool
+
 // ParseCmd parses user entered command line data
 func ParseCmd() (*UserData, error) {
 	fn := "ParseCmd"
-	eventIDFlag := flag.String("eventID", "", "EventID to fetch the event for")
+	flag.StringVar(&eventIDFlag, "eventID", "", "EventID to fetch the event for")
+	flag.StringVar(&eventIDFlag, "id", "", "EventID to fetch the event for (shorthand)")
 
 	var tagFlags *TagFlags
-	titleFlag := flag.String("title", "", "The title of the event")
-	descFlag := flag.String("desc", "", "The actual event description")
+	flag.StringVar(&titleFlag, "title", "", "The title of the event")
+	flag.StringVar(&descFlag, "desc", "", "The actual event description")
 	flag.Var(tagFlags, "tags", "The tags for the event")
 
-	listFlag := flag.Bool("list", false, "Use this flag to list all events")
-	createFlag := flag.Bool("create", false, "Use this flag to create an event")
+	flag.BoolVar(&listFlag, "list", false, "Use this flag to list all events")
+	flag.BoolVar(&listFlag, "l", false, "Use this flag to list all events (shorthand)")
+	flag.BoolVar(&createFlag, "create", false, "Use this flag to create an event")
+	flag.BoolVar(&createFlag, "c", false, "Use this flag to create an event (shorthand)")
 
 	flag.Parse()
 	args := flag.Args()
 
 	userData := &UserData{}
 
-	if *listFlag {
+	if listFlag {
 		listData, err := ParseListData(args, []interface{}{eventIDFlag})
 		if err != nil {
 			return nil, deepError.New(fn, "parsing list data", err)
@@ -125,7 +136,7 @@ func ParseCmd() (*UserData, error) {
 		return userData, nil
 	}
 
-	if *createFlag {
+	if createFlag {
 		createData, err := ParseCreateData(args, []interface{}{titleFlag, descFlag, tagFlags})
 		if err != nil {
 			return nil, deepError.New(fn, "parsing create data", err)
@@ -142,10 +153,10 @@ func ParseCmd() (*UserData, error) {
 
 // ParseListData parses the data if command is list
 func ParseListData(args []string, flags []interface{}) (*ListData, error) {
-	eventIDFlag := flags[0].(*string)
+	eventIDFlag := flags[0].(string)
 	listData := &ListData{}
 
-	listData.EventID = *eventIDFlag
+	listData.EventID = eventIDFlag
 	if listData.EventID == "" {
 		if len(args) > 0 {
 			listData.EventID = args[0]
@@ -160,13 +171,13 @@ func ParseListData(args []string, flags []interface{}) (*ListData, error) {
 func ParseCreateData(args []string, flags []interface{}) (*CreateData, error) {
 	fn := "ParseCreateData"
 
-	titleFlag := flags[0].(*string)
-	descFlag := flags[1].(*string)
+	titleFlag := flags[0].(string)
+	descFlag := flags[1].(string)
 	tagFlags := flags[2].(*TagFlags)
 
 	createData := &CreateData{}
 
-	createData.Title = *titleFlag
+	createData.Title = titleFlag
 	if createData.Title == "" {
 		if len(args) > 0 {
 			createData.Title = args[0]
@@ -176,7 +187,7 @@ func ParseCreateData(args []string, flags []interface{}) (*CreateData, error) {
 		}
 	}
 
-	createData.Desc = *descFlag
+	createData.Desc = descFlag
 	if createData.Desc == "" {
 		if len(args) > 0 {
 			createData.Desc = args[0]
