@@ -48,7 +48,7 @@ func handleList(api *Api, listData *ListData) {
 			return
 		}
 
-		fmt.Println(getEventMini(event))
+		fmt.Println(getEventFull(event))
 	}
 }
 
