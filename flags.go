@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	tagSeparator = ";"
+	tagSeparator = "#"
 	cmdList      = "list"
 	cmdCreate    = "create"
 )

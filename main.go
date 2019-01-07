@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 func main() {
@@ -33,8 +36,9 @@ func handleList(api *Api, listData *ListData) {
 			return
 		}
 
-		for _, event := range events {
-			fmt.Println(event.ToJSON())
+		for i := len(events) - 1; i >= 0; i-- {
+			event := events[i]
+			fmt.Println(getEventMini(event))
 		}
 
 	} else {
@@ -44,7 +48,7 @@ func handleList(api *Api, listData *ListData) {
 			return
 		}
 
-		fmt.Println(event.ToJSON())
+		fmt.Println(getEventMini(event))
 	}
 }
 
@@ -70,4 +74,41 @@ func handleCreate(api *Api, createData *CreateData) {
 	}
 
 	fmt.Println("Created event with ID: " + eventID)
+}
+
+var timeColor = color.New(color.FgGreen)
+var titleColor = color.New(color.FgYellow)
+var tagColor = color.New(color.FgCyan)
+var idColor = color.New(color.FgGreen)
+
+func getEventMini(event *Event) string {
+	if event == nil {
+		return "<nil>"
+	}
+
+	var miniStrBldr strings.Builder
+
+	timePart := timeColor.Sprint(event.UserCreatedAt.Format(time.RFC1123Z))
+	titlePart := titleColor.Sprint(event.Title)
+	miniStrBldr.WriteString(fmt.Sprintf("%s %s ", timePart, titlePart))
+
+	for _, tag := range event.Tags {
+		if tag != nil {
+			tagPart := tagColor.Sprint(tagSeparator + tag.Value)
+			miniStrBldr.WriteString(tagPart + " ")
+		}
+	}
+
+	eventIDPart := idColor.Sprint(event.ID)
+	miniStrBldr.WriteString(fmt.Sprintf("(%s)", eventIDPart))
+
+	return miniStrBldr.String()
+}
+
+func getEventFull(event *Event) string {
+	if event == nil {
+		return "<nil>"
+	}
+
+	return event.ToJSON()
 }
