@@ -105,8 +105,8 @@ func ParseCmd() (*UserData, error) {
 	descFlag := flag.String("desc", "", "The actual event description")
 	flag.Var(tagFlags, "tags", "The tags for the event")
 
-	listFlag := flag.Bool("list", true, "Use this flag to list all events")
-	createFlag := flag.Bool("create", true, "Use this flag to create an event")
+	listFlag := flag.Bool("list", false, "Use this flag to list all events")
+	createFlag := flag.Bool("create", false, "Use this flag to create an event")
 
 	flag.Parse()
 	args := flag.Args()

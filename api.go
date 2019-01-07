@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/jforcode/Go-DeepError"
@@ -25,8 +26,23 @@ type Api struct {
 const (
 	createEP = "/event"
 	getAllEP = "/events"
-	getEP    = "/event/:eventID"
+	getEP    = "/events/:eventID"
 )
+
+type ApiError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (err ApiError) Error() string {
+	return strconv.Itoa(err.Code) + ":" + err.Message
+}
+
+type ApiResponse struct {
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data"`
+	Error   ApiError    `json:"error"`
+}
 
 // EventIDResponse represents the response to send back to client, in case of create event
 type EventIDResponse struct {
@@ -58,28 +74,13 @@ func (api *Api) CreateEvent(event *Event) (string, error) {
 		return "", deepError.New(fn, "new request", err)
 	}
 
-	resp, err := api.client.Do(req)
+	readInto := &EventIDResponse{}
+	err = api.makeRequestAndReadJSON(req, readInto)
 	if err != nil {
-		return "", deepError.New(fn, "making request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+		return "", deepError.New(fn, "requesting and reading", err)
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", deepError.New(fn, "read all from response", err)
-	}
-
-	var eventIDResp EventIDResponse
-	err = json.Unmarshal(respBody, &eventIDResp)
-	if err != nil {
-		return "", deepError.New(fn, "unmarshal", err)
-	}
-
-	return eventIDResp.EventID, nil
+	return readInto.EventID, nil
 }
 
 // GetAllEvents uses the API to get all events
@@ -92,28 +93,13 @@ func (api *Api) GetAllEvents() ([]*Event, error) {
 		return nil, deepError.New(fn, "new request", err)
 	}
 
-	resp, err := api.client.Do(req)
+	readInto := &EventsResponse{}
+	err = api.makeRequestAndReadJSON(req, readInto)
 	if err != nil {
-		return nil, deepError.New(fn, "making request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+		return nil, deepError.New(fn, "requesting and reading", err)
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, deepError.New(fn, "read all from response", err)
-	}
-
-	var allEventsResp EventsResponse
-	err = json.Unmarshal(respBody, &allEventsResp)
-	if err != nil {
-		return nil, deepError.New(fn, "unmarshal", err)
-	}
-
-	return allEventsResp.Events, nil
+	return readInto.Events, nil
 }
 
 // GetEvent uses the API to get the event with the given event ID
@@ -126,26 +112,52 @@ func (api *Api) GetEvent(eventID string) (*Event, error) {
 		return nil, deepError.New(fn, "new request", err)
 	}
 
+	readInto := &EventResponse{}
+	err = api.makeRequestAndReadJSON(req, readInto)
+	if err != nil {
+		return nil, deepError.New(fn, "requesting and reading", err)
+	}
+
+	return readInto.Event, nil
+}
+
+func (api *Api) makeRequestAndReadJSON(req *http.Request, readInto interface{}) error {
+	fn := "makeRequestAndReadJSON"
+
 	resp, err := api.client.Do(req)
 	if err != nil {
-		return nil, deepError.New(fn, "making request", err)
+		return deepError.New(fn, "making request", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
+		return deepError.New(fn, "Checking status", errors.New("Error: "+resp.Status))
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, deepError.New(fn, "read all from response", err)
+		return deepError.New(fn, "read all from response", err)
 	}
 
-	var eventResp EventResponse
-	err = json.Unmarshal(respBody, &eventResp)
+	apiResp := ApiResponse{}
+	err = json.Unmarshal(respBody, &apiResp)
 	if err != nil {
-		return nil, deepError.New(fn, "unmarshal", err)
+		return deepError.New(fn, "unmarshal", err)
 	}
 
-	return eventResp.Event, nil
+	if !apiResp.Success {
+		return deepError.New(fn, "unsuccessful request", apiResp.Error)
+	}
+
+	dataPart, err := json.Marshal(apiResp.Data)
+	if err != nil {
+		return deepError.New(fn, "marshalling data part", err)
+	}
+
+	err = json.Unmarshal(dataPart, readInto)
+	if err != nil {
+		return deepError.New(fn, "reading data part into variable", err)
+	}
+
+	return nil
 }

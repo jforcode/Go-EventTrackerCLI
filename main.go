@@ -34,7 +34,7 @@ func handleList(api *Api, listData *ListData) {
 		}
 
 		for _, event := range events {
-			fmt.Println(event)
+			fmt.Println(event.ToJSON())
 		}
 
 	} else {
@@ -44,7 +44,7 @@ func handleList(api *Api, listData *ListData) {
 			return
 		}
 
-		fmt.Println(event)
+		fmt.Println(event.ToJSON())
 	}
 }
 
